@@ -59,3 +59,9 @@ three = GPU.run $ unit (3 :: Exp Int)
 
 -- three' = the $ unit (3 :: Exp Int)
 
+-- (!) :: (Elt e, Shape t) => Acc (Array t e) -> Exp t -> Exp e
+
+sixteen' = A.map (+1) (use fifteen')
+
+fourteen = sixteen' ! index1 13
+
