@@ -63,5 +63,5 @@ three = GPU.run $ unit (3 :: Exp Int)
 
 sixteen' = A.map (+1) (use fifteen')
 
-fourteen = sixteen' ! index1 13
+-- fourteen = sixteen' ! index1 13
 

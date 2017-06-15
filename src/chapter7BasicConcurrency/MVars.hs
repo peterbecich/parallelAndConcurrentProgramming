@@ -13,4 +13,5 @@ main = do
   m <- newEmptyMVar
   _ <- forkIO $ putMVar m 'x'
   r <- takeMVar m
+  return ()
 
