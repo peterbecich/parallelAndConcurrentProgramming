@@ -23,6 +23,9 @@ library
                      , accelerate-llvm
                      , accelerate-llvm-native
                      , accelerate-llvm-ptx
+                     , stm
+                     , network
+                     , async
   default-language:    Haskell2010
 
 executable parallelAndConcurrentProgramming-exe

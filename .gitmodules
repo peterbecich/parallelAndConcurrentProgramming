@@ -1,3 +1,6 @@
 [submodule "parconc-examples"]
 	path = parconc-examples
 	url = git@github.com:simonmar/parconc-examples.git
+[submodule "c"]
+	path = src/Chapter15DebuggingTuningFFI/kernighanAndRitchieC
+	url = git@github.com:peterbecich/kernighanAndRitchieC.git

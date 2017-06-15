@@ -1,4 +1,4 @@
-module Chapter2EvalMonad where
+module Chapter2EvalMonad.Lazy where
 
 x = 1 + 2 :: Int
 
