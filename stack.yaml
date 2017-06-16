@@ -17,6 +17,9 @@
 #  location: "./custom-snapshot.yaml"
 resolver: lts-8.15
 
+ghc-options:
+  "*": -threaded
+
 # User packages to be built.
 # Various formats can be used as shown in the example below.
 #
