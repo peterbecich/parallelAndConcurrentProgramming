@@ -7,7 +7,7 @@ import Prelude
 import System.Environment
 import Data.Array.Accelerate as A
 import Data.Array.Accelerate.Interpreter
-import AccelerateCompat as A
+-- import AccelerateCompat as A
 
 -- <<Graph
 type Weight = Int32
@@ -74,7 +74,7 @@ expectedResult = toAdjMatrix $
           [11, 17, inf, 14, 21,  0] ]
 
 test :: Bool
-test = toList (shortestPaths testGraph) == toList expectedResult
+test = toList (shortestPaths testGraph) Prelude.== toList expectedResult
 
 toAdjMatrix :: [[Weight]] -> Graph
 toAdjMatrix xs = A.fromList (Z :. k :. k) (concat xs)

@@ -42,8 +42,11 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps:
 - normaldistribution-1.1.0.3
-- accelerate-io-0.15.1.0
-- distributed-process-simplelocalnet-0.2.3.2
+- accelerate-io-1.0.0.0
+- distributed-process-simplelocalnet-0.2.3.3
+- distributed-process-0.6.6
+- syb-0.6
+- repa-3.4.1.2
 
 # Override default flag values for local packages and extra-deps
 # flags:
@@ -71,5 +74,5 @@ extra-package-dbs: []
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
 
-ghc-options:
-  "*": -fPIC
+# ghc-options:
+#   "*": -fPIC
