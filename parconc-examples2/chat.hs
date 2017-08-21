@@ -61,6 +61,7 @@ main = withSocketsDo $ do
   forever $ do
       (handle, host, port) <- accept sock
       printf "Accepted connection from %s: %s\n" host (show port)
+      -- forkIO $ receiveBroadcast
       forkFinally (talk handle server) (\_ -> hClose handle)
 
 port :: Int
@@ -79,47 +80,64 @@ data Client = Client
   , clientHandle   :: Handle
   , clientKicked   :: TVar (Maybe String)
   , clientSendChan :: TChan Message
+  , clientBroadcastChan :: TChan OutgoingBroadcast
   }
 -- >>
 
 -- <<newClient
-newClient :: ClientName -> Handle -> STM Client
-newClient name handle = do
+newClient :: TChan OutgoingBroadcast -> ClientName -> Handle -> STM Client
+newClient broad name handle = do
   c <- newTChan
   k <- newTVar Nothing
+  -- broad <- newTChan -- duplicate server's broadcast channel
+  broad' <- dupTChan broad
   return Client { clientName     = name
                 , clientHandle   = handle
                 , clientSendChan = c
                 , clientKicked   = k
+                , clientBroadcastChan = broad'
                 }
 -- >>
 
 -- <<Server
 data Server = Server
   { clients :: TVar (Map ClientName Client)
+  , broadcastChannel :: TChan OutgoingBroadcast
   }
 
 newServer :: IO Server
 newServer = do
   c <- newTVarIO Map.empty
-  return Server { clients = c }
+  broad <- newTChanIO
+  return Server { clients = c, broadcastChannel = broad }
 -- >>
 
 -- <<Message
-data Message = Notice String
+data Message = IndividualNotice String
              | Tell ClientName String
-             | Broadcast ClientName String
+             | IncomingBroadcast ClientName String
              | Command String
+
+data OutgoingBroadcast = OutgoingBroadcast ClientName String
+                       | NoticeBroadcast String
+
+instance Show OutgoingBroadcast where
+  show (OutgoingBroadcast name str) = name ++ ": " ++ str
+  show (NoticeBroadcast str) = "**Server** " ++ str
+
 -- >>
 
 -- -----------------------------------------------------------------------------
 -- Basic operations
 
 -- <<broadcast
-broadcast :: Server -> Message -> STM ()
-broadcast Server{..} msg = do
-  clientmap <- readTVar clients
-  mapM_ (\client -> sendMessage client msg) (Map.elems clientmap)
+broadcast :: Server -> OutgoingBroadcast -> STM ()
+broadcast Server{..} msg =
+  writeTChan broadcastChannel msg
+
+  -- do
+  -- clientmap <- readTVar clients
+  -- mapM_ (\client -> sendMessage client msg) (Map.elems clientmap)
 -- >>
 
 -- <<sendMessage
@@ -149,10 +167,10 @@ kick server@Server{..} who by = do
   clientmap <- readTVar clients
   case Map.lookup who clientmap of
     Nothing ->
-      void $ sendToName server by (Notice $ who ++ " is not connected")
+      void $ sendToName server by (IndividualNotice $ who ++ " is not connected")
     Just victim -> do
       writeTVar (clientKicked victim) $ Just ("by " ++ by)
-      void $ sendToName server by (Notice $ "you kicked " ++ who)
+      void $ sendToName server by (IndividualNotice $ "you kicked " ++ who)
 
 -- -----------------------------------------------------------------------------
 -- The main server
@@ -162,6 +180,7 @@ talk handle server@Server{..} = do
   hSetNewlineMode handle universalNewlineMode
       -- Swallow carriage returns sent by telnet clients
   hSetBuffering handle LineBuffering
+  -- _ <- forkIO receiveBroadcast
   readName
  where
 -- <<readName
@@ -188,9 +207,9 @@ checkAddClient server@Server{..} name handle = atomically $ do
   clientmap <- readTVar clients
   if Map.member name clientmap
     then return Nothing
-    else do client <- newClient name handle
+    else do client <- newClient broadcastChannel name handle
             writeTVar clients $ Map.insert name client clientmap
-            broadcast server  $ Notice (name ++ " has connected")
+            broadcast server  $ NoticeBroadcast (name ++ " has connected")
             return (Just client)
 -- >>
 
@@ -198,38 +217,49 @@ checkAddClient server@Server{..} name handle = atomically $ do
 removeClient :: Server -> ClientName -> IO ()
 removeClient server@Server{..} name = atomically $ do
   modifyTVar' clients $ Map.delete name
-  broadcast server $ Notice (name ++ " has disconnected")
+  broadcast server $ NoticeBroadcast (name ++ " has disconnected")
 -- >>
+
+receiveBroadcast :: Client -> IO ()
+receiveBroadcast Client{..} = do 
+  _ <- putStrLn "fork `receiveBroadcast` thread:"
+  forever $ do  -- need to shut down this thread when client disconnects
+    incomingBroadcast <- atomically $ readTChan clientBroadcastChan
+    _ <- putStrLn $ show incomingBroadcast
+    hPutStrLn clientHandle $ show incomingBroadcast
 
 -- <<runClient
 runClient :: Server -> Client -> IO ()
 runClient serv@Server{..} client@Client{..} = do
-  race server receive
+  _ <- forkIO $ receiveBroadcast client
+  _ <- race server receive
+  -- _ <- race server receiveBroadcast
   return ()
  where
-  receive = forever $ do
-    msg <- hGetLine clientHandle
-    atomically $ sendMessage client (Command msg)
+   receive :: IO ()
+   receive = forever $ do
+     msg <- hGetLine clientHandle
+     atomically $ sendMessage client (Command msg)
 
-  server = join $ atomically $ do
-    k <- readTVar clientKicked
-    case k of
-      Just reason -> return $
-        hPutStrLn clientHandle $ "You have been kicked: " ++ reason
-      Nothing -> do
-        msg <- readTChan clientSendChan
-        return $ do
-            continue <- handleMessage serv client msg
-            when continue $ server
+   server = join $ atomically $ do
+     k <- readTVar clientKicked
+     case k of
+       Just reason -> return $
+         hPutStrLn clientHandle $ "You have been kicked: " ++ reason
+       Nothing -> do
+         msg <- readTChan clientSendChan
+         return $ do
+           continue <- handleMessage serv client msg
+           when continue $ server
 -- >>
 
 -- <<handleMessage
 handleMessage :: Server -> Client -> Message -> IO Bool
 handleMessage server client@Client{..} message =
   case message of
-     Notice msg         -> output $ "*** " ++ msg
+     IndividualNotice msg         -> output $ "*** " ++ msg
      Tell name msg      -> output $ "*" ++ name ++ "*: " ++ msg
-     Broadcast name msg -> output $ "<" ++ name ++ ">: " ++ msg
+     IncomingBroadcast name msg -> output $ "<" ++ name ++ ">: " ++ msg
      Command msg ->
        case words msg of
            ["/kick", who] -> do
@@ -244,7 +274,7 @@ handleMessage server client@Client{..} message =
                hPutStrLn clientHandle $ "Unrecognised command: " ++ msg
                return True
            _ -> do
-               atomically $ broadcast server $ Broadcast clientName msg
+               atomically $ broadcast server $ OutgoingBroadcast clientName msg
                return True
  where
    output s = do hPutStrLn clientHandle s; return True

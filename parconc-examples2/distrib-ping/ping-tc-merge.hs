@@ -22,6 +22,7 @@ instance Binary Message
 pingServer :: Process ()
 pingServer = do
   Ping chan <- expect
+  _ <- liftIO $ putStrLn $ "say: ping received from " ++ (show chan)
   say $ printf "ping received from %s" (show chan)
   mypid <- getSelfPid
   sendChan chan mypid

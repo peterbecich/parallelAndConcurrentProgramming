@@ -21,10 +21,17 @@ instance Binary Message
 -- <<pingServer
 pingServer :: Process ()
 pingServer = do
+  _ <- liftIO $ putStrLn "top of `pingServer` do-block"
   Ping chan <- expect
+  _ <- liftIO $ putStrLn $ "Ping containing channel received " ++ (show chan)
   say $ printf "ping received from %s" (show chan)
   mypid <- getSelfPid
+  _ <- liftIO $ putStrLn $ "my PID: " ++ (show mypid)
   sendChan chan mypid
+  -- Ping second <- receiveChan chan
+  -- _ <- liftIO $ putStrLn $ "second Ping received, this time by channel"
+  -- sendChan chan 
+  
 -- >>
 
 -- <<remotable
@@ -34,13 +41,19 @@ remotable ['pingServer]
 -- <<master
 master :: [NodeId] -> Process ()
 master peers = do
+  _ <- liftIO $ putStrLn "top of `master` do-block"
+  _ <- liftIO $ putStrLn "peers:"
+  _ <- liftIO $ forM_ peers (\peer -> putStrLn $ show peer)
 
+  _ <- liftIO $ putStrLn "first ping to each slave"
   ps <- forM peers $ \nid -> do
           say $ printf "spawning on %s" (show nid)
           spawn nid $(mkStaticClosure 'pingServer)
 
+  _ <- liftIO $ putStrLn "mapM_ monitor ps"
   mapM_ monitor ps
 
+  _ <- liftIO $ putStrLn "ports"
   ports <- forM ps $ \pid -> do
     say $ printf "pinging %s" (show pid)
     (sendport,recvport) <- newChan      -- <1>

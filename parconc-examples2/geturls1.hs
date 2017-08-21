@@ -8,10 +8,12 @@ main = do
   m2 <- newEmptyMVar                                    -- <1>
 
   forkIO $ do                                           -- <2>
+    _ <- Prelude.putStrLn "get shovel"
     r <- getURL "http://www.wikipedia.org/wiki/Shovel"
     putMVar m1 r
 
   forkIO $ do                                           -- <3>
+    _ <- Prelude.putStrLn "get spade"
     r <- getURL "http://www.wikipedia.org/wiki/Spade"
     putMVar m2 r
 

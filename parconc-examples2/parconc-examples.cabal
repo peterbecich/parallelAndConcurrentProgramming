@@ -798,6 +798,7 @@ executable chat
                  , containers >= 0.4 && < 0.6
                  , async ==2.1.*
                  , stm ==2.4.*
+                 , time
   if flag(network26)
       build-depends: network >= 2.6 && < 2.7
                    , network-uri >= 2.6 && < 2.7

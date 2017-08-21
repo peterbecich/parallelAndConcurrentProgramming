@@ -44,7 +44,8 @@ server h factor c = do
   f <- atomically $ readTVar factor     -- <1>
   hPrintf h "Current factor: %d\n" f    -- <2>
   loop f                                -- <3>
- where
+  where
+  loop :: Integer -> IO () 
   loop f = do
     action <- atomically $ do           -- <4>
       f' <- readTVar factor             -- <5>
@@ -55,12 +56,14 @@ server h factor c = do
            return (command f l)         -- <9>
     action
 
+  newfactor :: Integer -> IO ()
   newfactor f = do                      -- <10>
     hPrintf h "new factor: %d\n" f
     loop f
 
+  command :: Integer -> String -> IO ()
   command f s                           -- <11>
-   = case s of
+    = case s of
       "end" ->
         hPutStrLn h ("Thank you for using the " ++
                      "Haskell doubling service.")         -- <12>
