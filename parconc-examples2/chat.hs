@@ -61,7 +61,6 @@ main = withSocketsDo $ do
   forever $ do
       (handle, host, port) <- accept sock
       printf "Accepted connection from %s: %s\n" host (show port)
-      -- forkIO $ receiveBroadcast
       forkFinally (talk handle server) (\_ -> hClose handle)
 
 port :: Int
@@ -180,7 +179,6 @@ talk handle server@Server{..} = do
   hSetNewlineMode handle universalNewlineMode
       -- Swallow carriage returns sent by telnet clients
   hSetBuffering handle LineBuffering
-  -- _ <- forkIO receiveBroadcast
   readName
  where
 -- <<readName
@@ -231,8 +229,13 @@ receiveBroadcast Client{..} = do
 -- <<runClient
 runClient :: Server -> Client -> IO ()
 runClient serv@Server{..} client@Client{..} = do
-  _ <- forkIO $ receiveBroadcast client
-  _ <- race server receive
+  -- _ <- forkIO $ receiveBroadcast client
+  -- _ <- putStrLn "`race server receive`"
+  -- _ <- race server receive
+  -- _ <- putStrLn "`race receive (receiveBroadcast client)`"
+  -- _ <- race receive (receiveBroadcast client)
+  _ <- putStrLn "`race (race server receive) (receiveBroadcast client)`"
+  _ <- race (race server receive) (receiveBroadcast client)
   -- _ <- race server receiveBroadcast
   return ()
  where
