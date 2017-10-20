@@ -1020,6 +1020,7 @@ executable distrib-db
                  , binary >=0.6.3 && < 0.9
                  , template-haskell >= 2.7 && < 2.12
                  , transformers >=0.3 && <0.6
+                 , lens
   if flag(network26)
       build-depends: network >= 2.6 && < 2.7
                    , network-uri >= 2.6 && < 2.7
