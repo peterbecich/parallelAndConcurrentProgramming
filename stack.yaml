@@ -48,8 +48,8 @@ extra-deps:
 - accelerate-llvm-native-1.0.0.0
 - accelerate-llvm-ptx-1.0.0.1
 - chaselev-deque-0.5.0.5
-- cuda-0.7.5.3
-- llvm-hs-4.0.1.0
+# - cuda-0.7.5.3
+# - llvm-hs-4.0.1.0
 
 # Override default flag values for local packages and extra-deps
 flags: {}
@@ -74,3 +74,7 @@ extra-package-dbs: []
 #
 # Allow a newer minor version of GHC than the snapshot specifies
 # compiler-check: newer-minor
+
+
+docker:
+  enable: true

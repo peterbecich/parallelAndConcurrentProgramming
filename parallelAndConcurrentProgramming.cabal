@@ -20,10 +20,10 @@ library
   build-depends:       base >= 4.7 && < 5
                      , parallel
                      , deepseq
-                     , accelerate
-                     , accelerate-llvm
-                     , accelerate-llvm-native
-                     , accelerate-llvm-ptx
+                     -- , accelerate
+                     -- , accelerate-llvm
+                     -- , accelerate-llvm-native
+                     -- , accelerate-llvm-ptx
                      , stm
                      , network
                      , async
