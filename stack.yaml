@@ -15,7 +15,7 @@
 # resolver:
 #  name: custom-snapshot
 #  location: "./custom-snapshot.yaml"
-resolver: lts-8.15
+resolver: lts-11.7
 
 ghc-options:
   "*": -threaded
@@ -76,5 +76,5 @@ extra-package-dbs: []
 # compiler-check: newer-minor
 
 
-docker:
-  enable: true
+# docker:
+#   enable: true
